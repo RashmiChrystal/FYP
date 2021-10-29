@@ -319,6 +319,8 @@ if __name__ == '__main__':
     #for img in list_4:
     #    print(img)
 
+    #This is to test git commits
+
     print("end")
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
