@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import os
 import glob
+import math
 from skimage.filters import roberts, sobel, scharr, prewitt
 from scipy import ndimage as nd
 from skimage.filters.rank import entropy
@@ -111,6 +112,12 @@ def contrastStretching2(image):
 
 #it'll be better to perform histogram equilization too
 
+def calcHistogram(image):
+    hist, edges, patches = plt.hist(image.ravel(), 256, [0, 256])
+    return hist
+
+#crop image. https://stackoverflow.com/questions/15589517/how-to-crop-an-image-in-opencv-using-python
+
 def medianFilter(img):
     median = cv2.medianBlur(img, 5)
     return median
@@ -119,6 +126,86 @@ def gaussianBlur(image):
     gaussian = cv2.GaussianBlur(image,(5,5),0)
     return gaussian
 
+#This function is for finding the average of the lists of features
+def findAverage(list):
+    avg = sum(list)/len(list)
+    return avg
+
+#**********************************************************************************************************************
+#Extracting features
+G = 256 #NUmber of gray levels in an image
+#Statistical features
+def calc_Probability_Density(hist_i_value, size):
+    #size = img.size
+    #hist = calcHistogram(img)
+    return (hist_i_value/size)
+
+def Stat_Mean(i, prob_density):
+    mean = (i * (prob_density))
+    return mean
+
+def Stat_Avg_Contrast(i, prob_density, mean):
+    avg_contrast = pow((i-mean),2) * prob_density
+    return avg_contrast
+
+def Stat_Skewness(i, mean, prob_density):
+    skewness_component = pow((i-mean),3) * prob_density
+    return skewness_component
+
+def Stat_Kurtosis(i, mean, prob_density):
+    kurtosis_component = (pow((i-mean),4) * prob_density) - 3
+    return kurtosis_component
+
+def Stat_Energy(prob_density):
+    energy = pow(prob_density,2)
+    return energy
+
+def Stat_Entropy(prob_density):
+    entropy = prob_density * math.log2(prob_density)
+    return entropy
+
+#function for 5: contrast, skewness, kurtosis, energy, entropy
+def Stat_Features_Set1(i, mean, prob_density):
+    avg_contrast = pow((i - mean), 2) * prob_density
+    skewness_component = pow((i - mean), 3) * prob_density
+    kurtosis_component = (pow((i - mean), 4) * prob_density) - 3
+    energy = pow(prob_density, 2)
+    #entropy = prob_density * (math.log(prob_density,2))
+    #print(prob_density)
+   # entropy = math.log(prob_density,2)
+    #print(entropy)
+    return avg_contrast, skewness_component, kurtosis_component, energy
+
+def calc_Stat_Features(img):
+    Return_Set = []
+    stat_mean=0
+    stat_avg_contrast=0
+    skewness_component=0
+    kurtosis_component=0
+    stat_energy=0
+    #entropy_component = 0
+    hist = calcHistogram(img)
+    size = img.size
+    for i in range(G):
+        p_d = calc_Probability_Density(hist[i], size)
+        stat_mean += Stat_Mean(i, p_d)
+    for i in range(G):
+        p_d = calc_Probability_Density(hist[i], size)
+        #print(p_d)
+        #avg_contrast, skewness_component, kurtosis_component, energy, entropy
+        p1, p2, p3, p4 = Stat_Features_Set1(i, stat_mean, p_d)
+        stat_avg_contrast += p1  # variance^2 (avg_contrast)
+        skewness_component += p2 #skewness_component
+        kurtosis_component += p3 #kurtosis_component
+        stat_energy += p4 #energy
+        #entropy_component += p5 #entropy
+    skewness = pow(stat_avg_contrast,(-3/2)) * skewness_component
+    kurtosis = pow(stat_avg_contrast,(-4/2)) * kurtosis_component
+    #stat_entropy = (-1) * entropy_component
+    #, stat_avg_contrast, skewness, kurtosis, stat_energy, stat_entropy
+    return stat_mean, stat_avg_contrast, skewness, kurtosis, stat_energy
+
+#Gabor and others
 def gaborFilter(img):
     num = 1
     fimg_list = []
@@ -142,6 +229,7 @@ def cannyEdge(img):
     #cv2.imwrite(os.path.join(hist_path, "Canny.jpg"), edges)
     edges2 = edges.reshape(-1)
     df['Canny edges'] = edges2
+    return edges2
 
 def edge_roberts(img):
     edge_robert = roberts(img)
@@ -150,6 +238,7 @@ def edge_roberts(img):
     #cv2.waitKey()
     edge_robert2 = edge_robert.reshape(-1)
     df['Roberts'] = edge_robert2
+    return edge_robert2
 
 def edge_sobel(img):
     edge_sobel1 = sobel(img)
@@ -158,6 +247,7 @@ def edge_sobel(img):
     #cv2.waitKey()
     edge_sobel2 = edge_sobel1.reshape(-1)
     df['Sobel'] = edge_sobel2
+    return edge_sobel2
 
 def edge_scharr(img):
     edge_scharr1 = scharr(img)
@@ -166,6 +256,7 @@ def edge_scharr(img):
     #cv2.waitKey()
     edge_scharr2 = edge_scharr1.reshape(-1)
     df['Scharr'] = edge_scharr2
+    return edge_scharr2
 
 def edge_prewitt(img):
     edge_prewitt1 = prewitt(img)
@@ -174,6 +265,7 @@ def edge_prewitt(img):
     #cv2.waitKey()
     edge_prewitt2 = edge_prewitt1.reshape(-1)
     df['Prewitt'] = edge_prewitt2
+    return edge_prewitt2
 
 def gaussianFeature(img):
     gaussian_img = nd.gaussian_filter(img, sigma = 3)
@@ -246,55 +338,38 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print_hi('PyCharm')
-    #cv2.imshow("pic", list_[0])
-    #cv2.waitKey(5000)
-    image = readOneImage(list_, 50)
-    #cv2.imshow("pic2", image)
-    #cv2.waitKey(5000)
-
-    contrast_stretched_image = contrastStretching(image)
-    #contrast_stretched_image = contrastStretching2(image)
-    #cv2.imwrite(os.path.join(hist_path, "contrast_stretched.jpg"), contrast_stretched_image)
-    #cv2.imshow("contrast_stretched", contrast_stretched_image)
-    #cv2.waitKey(0)
-    median_image = medianFilter(contrast_stretched_image)
-    cv2.imwrite(os.path.join(hist_path, "median.jpg"), median_image)
-    gaussian_image = gaussianBlur(contrast_stretched_image)
-    cv2.imwrite(os.path.join(hist_path, "gaussian.jpg"), gaussian_image)
-    gaussian_image2 = gaussian_image.reshape(-1)
-    df['Original pixel values'] = gaussian_image2
-    print(df.head(10))
-
-    gabor_images = gaborFilter(gaussian_image)
-    num1 = 1
-    for img in gabor_images:
-        gabor_label = "Gabor" + str(num1) + ".jpg"
-        cv2.imwrite(os.path.join(hist_path, gabor_label), img)
-        num1 += 1
-
-    cannyEdge(gaussian_image)
-    edge_roberts(gaussian_image)
-    edge_sobel(gaussian_image)
-    edge_scharr(gaussian_image)
-    edge_prewitt(gaussian_image)
-    gaussianFeature(gaussian_image)
-    varianceFeature(gaussian_image)
-
-    siftimg, keypoints, descriptors = siftAlgo(gaussian_image)
-    # cv2.imshow("sift image", siftimg)
-    # cv2.waitKey()
-    print("keypoints: ", keypoints)
-    print("descriptors: ", np.size(descriptors[0]))
-    print("descriptors: ", np.size(descriptors[1]))
-    print("descriptors: ", np.size(descriptors[60]))
-    # num2 = 1
-    # for item in descriptors:
-    #     df_sift[str(num2)] = item
-    #     num2 += 1
-    entropyFeature(gaussian_image)
-    performPCA()
-    print(df.head(10))
-    df.to_csv('C:/Users/user/PycharmProjects/FYP/Features.csv')
+    # image = readOneImage(list_, 50)
+    #
+    # contrast_stretched_image = contrastStretching(image)
+    # median_image = medianFilter(contrast_stretched_image)
+    # cv2.imwrite(os.path.join(hist_path, "median.jpg"), median_image)
+    # gaussian_image = gaussianBlur(contrast_stretched_image)
+    # cv2.imwrite(os.path.join(hist_path, "gaussian.jpg"), gaussian_image)
+    # gaussian_image2 = gaussian_image.reshape(-1)
+    # df['Original pixel values'] = gaussian_image2
+    # print(df.head(10))
+    #
+    # gabor_images = gaborFilter(gaussian_image)
+    # num1 = 1
+    # for img in gabor_images:
+    #     gabor_label = "Gabor" + str(num1) + ".jpg"
+    #     cv2.imwrite(os.path.join(hist_path, gabor_label), img)
+    #     num1 += 1
+    #
+    # cannyEdge(gaussian_image)
+    # edge_roberts(gaussian_image)
+    # edge_sobel(gaussian_image)
+    # edge_scharr(gaussian_image)
+    # edge_prewitt(gaussian_image)
+    # gaussianFeature(gaussian_image)
+    # varianceFeature(gaussian_image)
+    #
+    # siftimg, keypoints, descriptors = siftAlgo(gaussian_image)
+    #
+    # entropyFeature(gaussian_image)
+    # performPCA()
+    # print(df.head(10))
+    # df.to_csv('C:/Users/user/PycharmProjects/FYP/Features.csv')
     #df_sift.to_csv('C:/Users/user/PycharmProjects/FYP/Sift_Descriptors.csv')
 
     #**************************************************************************************************************
@@ -302,19 +377,73 @@ if __name__ == '__main__':
     list_3 = readImagesFromFolder2()
     contrast_stretched_image_list = []
     num_CS = 0
+    Canny_Edges_list = []
+    Edge_Roberts_List = []
+    Edge_Sobel_List = []
+    Edge_Scharr_List = []
+    Edge_Prewitt_List = []
+    Stat_Mean_List = []
+    Stat_Avg_Contrast_List = []
+    Stat_Skewness_List = []
+    Stat_Kurtosis_List = []
+    Stat_Energy_List = []
+    Stat_Entropy_List = []
     for img in list_3:
+        print("length of images list, ", len(list_3))
         CS_img = contrastStretching(img)
         contrast_stretched_image_list.append(CS_img)
         path = hist_path + '\CS_images'
         label = 'CS_' + str(num_CS) + '.jpg'
-        cv2.imwrite(os.path.join(path, label), CS_img)
+        #cv2.imwrite(os.path.join(path, label), CS_img)
         gaussian_img = gaussianBlur(CS_img)
         path1 = hist_path + '\Gaussian_imgs'
         label1 = 'G_' + str(num_CS) + '.jpg'
-        cv2.imwrite(os.path.join(path1, label1), gaussian_img)
+        #cv2.imwrite(os.path.join(path1, label1), gaussian_img)
         #use the original pixel values of the gaussian images
+
+        canny_edges2 = cannyEdge(gaussian_img)
+        avg_canny_edges2 = findAverage(canny_edges2)
+        Canny_Edges_list.append(avg_canny_edges2)
+
+        edge_robert2 = edge_roberts(gaussian_img)
+        avg_edge_roberts2 = findAverage(edge_robert2)
+        Edge_Roberts_List.append(avg_edge_roberts2)
+
+        edge_sobel2 = edge_sobel(gaussian_img)
+        avg_edge_sobel2 = findAverage(edge_sobel2)
+        Edge_Sobel_List.append(avg_edge_sobel2)
+
+        edge_scharr2 = edge_scharr(gaussian_img)
+        avg_edge_scharr2 = findAverage(edge_scharr2)
+        Edge_Scharr_List.append(avg_edge_scharr2)
+
+        edge_prewitt2 = edge_prewitt(gaussian_img)
+        avg_edge_prewitt2 = findAverage(edge_prewitt2)
+        Edge_Prewitt_List.append(avg_edge_prewitt2)
+
+        stat_mean, stat_avg_contrast, skewness, kurtosis, stat_energy = calc_Stat_Features(gaussian_img)
+        Stat_Mean_List.append(stat_mean)
+        Stat_Avg_Contrast_List .append(stat_avg_contrast)
+        Stat_Skewness_List.append(skewness)
+        Stat_Kurtosis_List.append(kurtosis)
+        Stat_Energy_List.append(stat_energy)
+        # Stat_Entropy_List.append(stat_entropy)
+
+        print(num_CS)
         num_CS = num_CS + 1
 
+    df_newFeatures1['CannyEdge'] = Canny_Edges_list
+    df_newFeatures1['EdgeRoberts'] = Edge_Roberts_List
+    df_newFeatures1['EdgeSobel'] = Edge_Sobel_List
+    df_newFeatures1['EdgeScharr'] = Edge_Scharr_List
+    df_newFeatures1['EdgePrewitt'] = Edge_Prewitt_List
+    df_newFeatures1['StatMean'] = Stat_Mean_List
+    df_newFeatures1['StatAvgContrast'] = Stat_Avg_Contrast_List
+    df_newFeatures1['StatSkewness'] = Stat_Skewness_List
+    df_newFeatures1['StatKurtosis'] = Stat_Kurtosis_List
+    df_newFeatures1['StatEnergy'] = Stat_Energy_List
+    # df_newFeatures1['StatEntropy'] = Stat_Entropy_List
+    df_newFeatures1.to_csv('C:/Users/user/PycharmProjects/FYP/NewFeatures.csv')
     #list_4 = readImagesFromFolder2()
     #for img in list_4:
     #    print(img)
