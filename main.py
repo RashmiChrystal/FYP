@@ -278,6 +278,7 @@ def gaussianFeature(img):
     #cv2.waitKey()
     df['Gaussian S3'] = gaussian_img1
     df['Gaussian S7'] = gaussian_img3
+    return gaussian_img1, gaussian_img3
 
 def varianceFeature(img):
     variance_img = nd.generic_filter(img, np.var, size =3)
@@ -285,6 +286,7 @@ def varianceFeature(img):
     #cv2.waitKey()
     variance_img1 = variance_img.reshape(-1)
     df['Variance'] = variance_img1
+    return variance_img1
 
 def siftAlgo(img):
     print(img.shape[:2])
@@ -382,12 +384,16 @@ if __name__ == '__main__':
     Edge_Sobel_List = []
     Edge_Scharr_List = []
     Edge_Prewitt_List = []
+    Gaussian_img1_List = []
+    Gaussian_img3_List = []
+    Variance_list = []
     Stat_Mean_List = []
     Stat_Avg_Contrast_List = []
     Stat_Skewness_List = []
     Stat_Kurtosis_List = []
     Stat_Energy_List = []
     Stat_Entropy_List = []
+    Gabor_Individual_List = []
     for img in list_3:
         print("length of images list, ", len(list_3))
         CS_img = contrastStretching(img)
@@ -421,6 +427,24 @@ if __name__ == '__main__':
         avg_edge_prewitt2 = findAverage(edge_prewitt2)
         Edge_Prewitt_List.append(avg_edge_prewitt2)
 
+        gaussian_img1, gaussian_img3 = gaussianFeature(gaussian_img)
+        avg_gaussian_img1 = findAverage(gaussian_img1)
+        avg_gaussian_img3 = findAverage(gaussian_img3)
+        Gaussian_img1_List.append(avg_gaussian_img1)
+        Gaussian_img3_List.append(avg_gaussian_img3)
+
+        variance_img1 = varianceFeature(gaussian_img)
+        avg_variance_img1 = findAverage(variance_img1)
+        Variance_list.append(avg_variance_img1)
+
+        gabor_images = gaborFilter(gaussian_img)
+        total_gabor_image_values = [] #42 elements
+        for img in gabor_images:
+            g = img.reshape(-1)
+            avg_g = findAverage(g)
+            total_gabor_image_values.append(avg_g)
+        Gabor_Individual_List.append(total_gabor_image_values)
+
         stat_mean, stat_avg_contrast, skewness, kurtosis, stat_energy = calc_Stat_Features(gaussian_img)
         Stat_Mean_List.append(stat_mean)
         Stat_Avg_Contrast_List .append(stat_avg_contrast)
@@ -432,6 +456,22 @@ if __name__ == '__main__':
         print(num_CS)
         num_CS = num_CS + 1
 
+    Gabor_Total_Dict = {}
+    for i in range(len(Gabor_Individual_List[0])):
+        Gabor_Total_Dict['GB'+str(i)]=[]
+
+
+    for i in Gabor_Individual_List:
+        image_values = i
+        num = 0
+        for j in image_values:
+            label = 'GB'+str(num)
+            val = Gabor_Total_Dict[label]
+            val.append(j)
+            Gabor_Total_Dict[label] = val
+            num += 1
+
+    print(Gabor_Total_Dict)
     df_newFeatures1['CannyEdge'] = Canny_Edges_list
     df_newFeatures1['EdgeRoberts'] = Edge_Roberts_List
     df_newFeatures1['EdgeSobel'] = Edge_Sobel_List
@@ -443,10 +483,23 @@ if __name__ == '__main__':
     df_newFeatures1['StatKurtosis'] = Stat_Kurtosis_List
     df_newFeatures1['StatEnergy'] = Stat_Energy_List
     # df_newFeatures1['StatEntropy'] = Stat_Entropy_List
+    df_newFeatures1['Gaussian1'] = Gaussian_img1_List
+    df_newFeatures1['Gaussian3'] = Gaussian_img3_List
+    df_newFeatures1['Variance'] = Variance_list
+
+    Gabor_num = 0
+    for i in range(len(Gabor_Total_Dict)):
+        label = 'GB' + str(Gabor_num)
+        val = Gabor_Total_Dict[label]
+        df_newFeatures1[label] = val
+        Gabor_num += 1
+
     df_newFeatures1.to_csv('C:/Users/user/PycharmProjects/FYP/NewFeatures.csv')
     #list_4 = readImagesFromFolder2()
     #for img in list_4:
     #    print(img)
+
+
 
     #This is to test git commits
 
