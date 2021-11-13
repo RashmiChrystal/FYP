@@ -472,6 +472,11 @@ if __name__ == '__main__':
             num += 1
 
     print(Gabor_Total_Dict)
+    Gray_Images_List = []
+    for i in range(len(list_3)):
+        Gray_Images_List.append(i+1)
+
+    df_newFeatures1['Gray Level Images'] = Gray_Images_List
     df_newFeatures1['CannyEdge'] = Canny_Edges_list
     df_newFeatures1['EdgeRoberts'] = Edge_Roberts_List
     df_newFeatures1['EdgeSobel'] = Edge_Sobel_List
@@ -494,12 +499,43 @@ if __name__ == '__main__':
         df_newFeatures1[label] = val
         Gabor_num += 1
 
+    #ax = plt.gca()
+
+    #df_newFeatures1.plot(kind='line', x='Gray Level Images', y='CannyEdge', ax=ax)
+    #plt.show()
+    # x = df_newFeatures1['Gray Level Images']
+    # y = df_newFeatures1['CannyEdge']
+    # print(x)
+    # print(y)
+    #df_newFeatures1.plot()
+    plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['CannyEdge'], label="CannyEdge")
+    plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeRoberts'], label="EdgeRoberts")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeSobel'], label="EdgeSobel")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeScharr'], label="EdgeScharr")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgePrewitt'], label="EdgePrewitt")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['StatMean'], label="StatMean")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['StatAvgContrast'], label="StatAvgContrast")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['StatSkewness'], label="StatSkewness")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['StatKurtosis'], label="StatKurtosis")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['StatEnergy'], label="StatEnergy")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['Gaussian1'], label="Gaussian1")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['Gaussian3'], label="Gaussian3")
+    # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['Variance'], label="Variance")
+    # Gabor_plot_label_i = 0
+    # for i in range(31):
+    #     Gabor_plot_label = 'GB'+str(i)
+    #     plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1[Gabor_plot_label], label=Gabor_plot_label)
+    #     Gabor_plot_label_i += 1
+    plt.xlabel('Gray Images in the dataset')
+    plt.title('Distribution of features of Gray Level images')
+    plt.legend()
+    plt.show()
+
+
     df_newFeatures1.to_csv('C:/Users/user/PycharmProjects/FYP/NewFeatures.csv')
     #list_4 = readImagesFromFolder2()
     #for img in list_4:
     #    print(img)
-
-
 
     #This is to test git commits
 
