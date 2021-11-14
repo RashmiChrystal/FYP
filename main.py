@@ -12,6 +12,8 @@ from skimage.filters import roberts, sobel, scharr, prewitt
 from scipy import ndimage as nd
 from skimage.filters.rank import entropy
 from skimage.morphology import disk
+from skimage import io
+from skimage.feature import greycomatrix, greycoprops
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA as sklearnPCA
 from matplotlib import pyplot as plt
@@ -23,6 +25,8 @@ hist_path = r"C:\Users\user\PycharmProjects\FYP"
 df = pd.DataFrame()
 df_sift = pd.DataFrame()
 df_newFeatures1 = pd.DataFrame()
+
+PATCH_SIZE = 35
 
 #To read gray image
 def readImage(img_list, img):
@@ -210,12 +214,12 @@ def gaborFilter(img):
     num = 1
     fimg_list = []
     for theta in range(2):
-        theta = theta/4. * np.pi
+        theta = theta/4. * np.pi #theta 0, 1/4, 1/2
         for sigma in (3,5):
             for lamda in np.arange(0, np.pi, np.pi/4.):
                 for gamma in (0.05, 0.5):
                     gabor_label = 'Gabor' + str(num)
-                    kernel = cv2.getGaborKernel((5,5), sigma, theta, lamda, gamma, 0, ktype=cv2.CV_32F)
+                    kernel = cv2.getGaborKernel((5,5), sigma, theta, lamda, gamma, 0, ktype=cv2.CV_32F) #ktype is the data type. so it's saying that after the kernel is generated, store it as 32 float
                     fimg = cv2.filter2D(img, cv2.CV_8UC3, kernel)
                     filtered_img = fimg.reshape(-1)
                     df[gabor_label] = filtered_img
@@ -310,7 +314,8 @@ def performPCA():
     print("Performaing PCA")
     #read_file = pd.read_excel(r'F:\G\UOM\Level 4\FYP\Implementation\main.pyfeatures.xls')
     #read_file.to_csv(r'F:\G\UOM\Level 4\FYP\Implementation\features.csv', index = None, header = True)
-    featureset = pd.read_csv(r'C:\Users\user\PycharmProjects\FYP\Features.csv')
+    featureset = pd.read_csv(r'C:\Users\user\PycharmProjects\FYP\NewFeatures.csv')
+    featureset.drop(['Gray Level Images'], axis = 1, inplace = True)
 
     #Standardize the data (The first step of PCA)
     X_std = StandardScaler().fit_transform(featureset)
@@ -331,6 +336,12 @@ def performPCA():
     pca = sklearnPCA(n_components=2)
     pca.fit_transform(featureset)
     print('PCA Variance ratio: ', pca.explained_variance_ratio_)
+
+    pca = sklearnPCA().fit(X_std)
+    plt.plot(np.cumsum(pca.explained_variance_ratio_))
+    plt.xlabel('number of components')
+    plt.ylabel('cumulative explained variance')
+    plt.show()
 
 def print_hi(name):
     # Use a breakpoint in the code line below to debug your script.
@@ -537,7 +548,7 @@ if __name__ == '__main__':
     #for img in list_4:
     #    print(img)
 
-    #This is to test git commits
+    #This is to test git commits - test gabor
 
     print("end")
 
