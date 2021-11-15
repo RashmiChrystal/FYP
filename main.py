@@ -213,19 +213,23 @@ def calc_Stat_Features(img):
 def gaborFilter(img):
     num = 1
     fimg_list = []
-    for theta in range(2):
-        theta = theta/4. * np.pi #theta 0, 1/4, 1/2
-        for sigma in (3,5):
-            for lamda in np.arange(0, np.pi, np.pi/4.):
-                for gamma in (0.05, 0.5):
-                    gabor_label = 'Gabor' + str(num)
-                    kernel = cv2.getGaborKernel((5,5), sigma, theta, lamda, gamma, 0, ktype=cv2.CV_32F) #ktype is the data type. so it's saying that after the kernel is generated, store it as 32 float
-                    fimg = cv2.filter2D(img, cv2.CV_8UC3, kernel)
-                    filtered_img = fimg.reshape(-1)
-                    df[gabor_label] = filtered_img
-                    fimg_list.append(fimg)
-                    #cv2.imwrite(os.path.join(hist_path, gabor_label), fimg)
-                    num += 1
+    for theta in range(3):  # 0, 45, 90
+        theta = theta / 4 * np.pi  # theta 0, 1/4, 1/2
+        for theta_i in (theta - 10, theta - 5, theta):
+            for sigma in (3, 5):
+                for lamda in np.arange(np.pi / 2, np.pi, np.pi / 4):
+                    for gamma in (0.05, 0.5):
+                        gabor_label = 'Gabor' + str(num)
+                        kernel = cv2.getGaborKernel((5, 5), sigma, theta_i, lamda, gamma, 0,
+                                                    ktype=cv2.CV_32F)  # ktype is the data type. so it's saying that after the kernel is generated, store it as 32 float
+                        #name = "C:/Users/user/PycharmProjects/testForFYP/Gabor_kernels/K" + str(num) + ".png"
+                        #plt.imsave(name, kernel)
+                        fimg = cv2.filter2D(img, cv2.CV_8UC3, kernel)
+                        filtered_img = fimg.reshape(-1)
+                        df[gabor_label] = filtered_img
+                        fimg_list.append(fimg)
+                        # cv2.imwrite(os.path.join(hist_path, gabor_label), fimg)
+                        num += 1
     return fimg_list
 
 def cannyEdge(img):
@@ -482,7 +486,7 @@ if __name__ == '__main__':
             Gabor_Total_Dict[label] = val
             num += 1
 
-    print(Gabor_Total_Dict)
+    print("Length of the Gabor dictionary", len(Gabor_Total_Dict))
     Gray_Images_List = []
     for i in range(len(list_3)):
         Gray_Images_List.append(i+1)
@@ -519,8 +523,8 @@ if __name__ == '__main__':
     # print(x)
     # print(y)
     #df_newFeatures1.plot()
-    plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['CannyEdge'], label="CannyEdge")
-    plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeRoberts'], label="EdgeRoberts")
+    #plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['CannyEdge'], label="CannyEdge")
+    #plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeRoberts'], label="EdgeRoberts")
     # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeSobel'], label="EdgeSobel")
     # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgeScharr'], label="EdgeScharr")
     # plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1['EdgePrewitt'], label="EdgePrewitt")
@@ -537,10 +541,10 @@ if __name__ == '__main__':
     #     Gabor_plot_label = 'GB'+str(i)
     #     plt.plot(df_newFeatures1['Gray Level Images'], df_newFeatures1[Gabor_plot_label], label=Gabor_plot_label)
     #     Gabor_plot_label_i += 1
-    plt.xlabel('Gray Images in the dataset')
-    plt.title('Distribution of features of Gray Level images')
-    plt.legend()
-    plt.show()
+    #plt.xlabel('Gray Images in the dataset')
+    #plt.title('Distribution of features of Gray Level images')
+    #plt.legend()
+    #plt.show()
 
 
     df_newFeatures1.to_csv('C:/Users/user/PycharmProjects/FYP/NewFeatures.csv')
